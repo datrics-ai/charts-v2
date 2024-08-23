@@ -1,0 +1,582 @@
+# Default values for the Datrics helm chart. Refer to documentation on individual values for help with configuration.
+
+# -- Provide a name in place of `datrics`
+nameOverride: ""
+# -- String to fully override `"datrics.fullname"`
+fullnameOverride: ""
+# -- Annotations that will be applied to all resources created by the chart
+commonAnnotations: {}
+# -- Labels that will be applied to all resources created by the chart
+commonLabels: {}
+# -- Common environment variables that will be applied to all deployments/statefulsets created by the chart. Be careful not to override values already specified by the chart.
+commonEnv: []
+
+common:
+  domain: datrics.local
+  storage_bucket: datrics.local
+  env: local
+  workers_mode: false
+  fe_base_url: "http://app.datrics.local"
+  api_base_url: "https://api.datrics.local/"
+  deployer_base_url: "http://deployer-pipeline2-deployer:8001"
+
+images:
+   # -- Secrets with credentials to pull images from a private registry. Specified as name: value.
+  imagePullSecrets: []
+  apiImage:
+    repository: "registry.gitlab.com/datrics.ai/backend"
+    pullPolicy: IfNotPresent
+    tag: "ba695164"
+  feImage:
+    repository: "registry.gitlab.com/datrics.ai/frontend"
+    pullPolicy: IfNotPresent
+    tag: "2.22.4"
+  pipelineImage:
+    repository: "registry.gitlab.com/datrics.ai/pipeline-2"
+    pullPolicy: IfNotPresent
+    tag: "1367f177"
+  previewerImage:
+    repository: "registry.gitlab.com/datrics.ai/data-previewer"
+    pullPolicy: IfNotPresent
+    tag: "fc72f7b6"
+  aiAnalystImage:
+    repository: "registry.gitlab.com/datrics.ai/chat-data-prep-and-exploration"
+    pullPolicy: IfNotPresent
+    tag: "0cdf1f2e"
+  aiPrepImage:
+    repository: "registry.gitlab.com/datrics.ai/chat-data-prep-and-exploration"
+    pullPolicy: IfNotPresent
+    tag: "7c80c95d"
+  redisImage:
+    repository: "docker.io/bitnami/redis"
+    pullPolicy: IfNotPresent
+    tag: "7.2.5-debian-12-r0"
+  minioImage:
+    repository: "docker.io/bitnami/minio"
+    pullPolicy: IfNotPresent
+    tag: "2023.7.18"
+
+feIngress:
+  enabled: false
+  hostname: ""
+  subdomain: ""
+  className: ""
+  annotations: {}
+  labels: {}
+  tls: []
+
+aiprepIngress:
+  enabled: false
+  hostname: ""
+  subdomain: ""
+  className: ""
+  annotations: {}
+  labels: {}
+  tls: []
+
+apiIngress:
+  enabled: false
+  hostname: ""
+  subdomain: ""
+  ingressClassName: ""
+  annotations: {}
+  labels: {}
+  tls: []
+
+previewerIngress:
+  enabled: false
+  hostname: ""
+  subdomain: ""
+  ingressClassName: ""
+  annotations: {}
+  labels: {}
+  tls: []
+
+pivottableIngress:
+  enabled: false
+  hostname: ""
+  subdomain: ""
+  ingressClassName: ""
+  annotations: {}
+  labels: {}
+  tls: []
+
+aiAnalystIngress:
+  enabled: false
+  hostname: ""
+  subdomain: ""
+  ingressClassName: ""
+  annotations: {}
+  labels: {}
+  tls: []
+
+redis:
+  enabled: false # if false, external will be used
+  # redis values should go here
+
+minio:
+  enabled: false # if false, external will be used
+  # minio values should go here
+
+keda:
+  enabled: true # used to autoscale ai analyst based on amount of tasks in queue
+
+aiAnalyst:
+  enabled: true
+
+api:
+  name: "api"
+  setup:
+    name: "api-setup"
+    enabled: true
+    labels: {}
+    annotations: {}
+    podSecurityContext: {}
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "750Mi"
+      requests:
+        cpu: "200m"
+        memory: "500Mi"
+
+  config:
+    node_env: "production"
+    host: "localhost"
+    port: 3000
+    session_secret: ""
+    sentry_dsn: ""
+    default_pipeline_version: ""
+    db:
+      host: ""
+      port: ""
+      username: ""
+      password: ""
+      db: ""
+      connection_name: "production"
+    redis:
+      host: "datrics-redis-master"
+      port: "6379"
+      db: "0"
+    storage:
+      host: "datrics-minio"
+      port: "9000"
+      access_key: ""
+      secret_key: ""
+      use_ssl: "false"
+      bucket: ""
+    email: 
+      sender_email: ""
+      mailgun:
+        apiKey: ""
+        domain:  ""
+      mailchimp:
+        apiKey: ""
+        listId: ""
+    private_plan: "Enterprise"
+    sentry_dsn: ""
+    default_pipeline_version: ""
+    workers:
+      downscale: "false"
+      cloud_service: "azure"
+  deployment:
+    replicas: 1
+    labels: {}
+    annotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    resources:
+      limits:
+        cpu: "1"
+        memory: "2G"
+      requests:
+        cpu: "500m"
+        memory: "750Mi"
+    containerPort: 3000
+    startupProbe:
+      httpGet:
+        path: /api/v1
+        port: api
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1
+    livenessProbe:
+      httpGet:
+        path: /api/v1
+        port: api
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1
+    readinessProbe:
+      httpGet:
+        path: /api/v1
+        port: api
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1    
+    volumeMounts:
+    - name: api-uploads
+      mountPath: "/uploads"
+    volumeClaimTemplates:
+    - metadata:
+        name: api-uploads
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: "1Gi"
+        storageClassName: "default"
+  service:
+    type: ClusterIP
+    port: 3000
+    labels: {}
+    annotations: {}
+    loadBalancerSourceRanges: []
+    loadBalancerIP: ""
+  serviceAccount:
+    create: true
+    name: ""
+    labels: {}
+    annotations: {}
+
+
+fe:
+  name: "fe"
+  deployment:
+    replicas: 1
+    labels: {}
+    annotations: {}
+    podSecurityContext: {}
+    securityContext: {}
+    resources:
+     limits:
+       cpu: 500m
+       memory: 1000Mi
+     requests:
+       cpu: 200m
+       memory: 500Mi
+    containerPort: 80
+    startupProbe:
+      httpGet:
+        path: /
+        port: 80
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1
+    livenessProbe:
+      httpGet:
+        path: /
+        port: 80
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1
+    readinessProbe:
+      httpGet:
+        path: /
+        port: 80
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1
+    extraContainerConfig: {}
+    extraEnv: []
+    sidecars: []
+    nodeSelector: {}
+    tolerations: []
+    affinity: {}
+    volumes: []
+    volumeMounts: []
+  service:
+    type: ClusterIP
+    port: 80
+    labels: {}
+    annotations: {}
+    loadBalancerSourceRanges: []
+    loadBalancerIP: ""
+  serviceAccount:
+    create: true
+    name: ""
+    labels: {}
+    annotations: {}
+
+deployer:
+  name: "deployer"
+  deployment:
+    replicaCount: 1
+    annotations:
+      prometheus.io/path: /metrics
+      prometheus.io/port: "9102"
+      prometheus.io/scrape: "true"
+    command: ["/bin/bash"]
+    args: ["-c", "gunicorn -k gevent -b 0.0.0.0:8001 deployment_run:app"]
+    containerPort: "8001"
+    startupProbe:
+      httpGet:
+        path: /
+        port: deployer
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1
+    livenessProbe:
+      httpGet:
+        path: /
+        port: deployer
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1
+    readinessProbe:
+      httpGet:
+        path: /
+        port: deployer
+      failureThreshold: 6
+      periodSeconds: 10
+      timeoutSeconds: 1   
+      initialDelaySeconds: 5
+  service:
+    type: ClusterIP
+    port: 8001
+    labels: {}
+    annotations: {}
+    loadBalancerSourceRanges: []
+    loadBalancerIP: ""
+  serviceAccount:
+    create: true
+    name: ""
+    labels: {}
+    annotations: {}
+  config:
+    default_runner_tag: "default"
+    streams:
+      deployments: "tasks"
+      results: "task_statuses"
+    db_connection_string: ""
+    ai_data_prep_service_url: ""
+    redis:
+      host: "datrics-redis-master"
+      port: "6379"
+      db: "0"
+    storage:
+      host: "datrics-minio"
+      port: "9000"
+      access_key: ""
+      secret_key: ""
+      use_ssl: "false"
+      bucket: ""
+
+previewer:
+  name: "previewer"
+  config:
+    storage:
+      host: "datrics-minio"
+      port: "9000"
+      access_key: ""
+      secret_key: ""
+      use_ssl: "false"
+      bucket: ""
+    redis_cache_enabled: "false"
+    fs_cache_dir: "/cache-directory"
+    cache_enabled: "true"
+  deployment:
+    labels: {}
+    annotations: {}
+    volumes:
+    - name: previewer-cache
+      persistentVolumeClaim:
+        claimName: previewer-cache
+    - name: pivottable-cache
+      persistentVolumeClaim:
+        claimName: pivottable-cache
+  serviceAccount:
+    create: true
+    name: ""
+    labels: {}
+    annotations: {}
+  pivottable:
+    containerPort: 8051
+    service:
+      type: ClusterIP
+      port: 8051
+      labels: {}
+      annotations: {}
+      loadBalancerSourceRanges: []
+      loadBalancerIP: ""
+    command: ["/bin/bash"]
+    args: ["-c", "gunicorn pivot_table:server"]
+    volumeMounts:
+    - mountPath: /cache-directory
+      name: pivottable-cache
+    pvc:
+      annotations: {}
+      labels: {}
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 50Gi
+      storageClassName: default
+  previewer:
+    containerPort: 8050
+    service:
+      type: ClusterIP
+      port: 8050
+      labels: {}
+      annotations: {}
+      loadBalancerSourceRanges: []
+      loadBalancerIP: ""
+    config:
+      pageSize: 20
+    volumeMounts:
+    - mountPath: /cache-directory
+      name: previewer-cache
+    pvc:
+      annotations: {}
+      labels: {}
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 50Gi
+      storageClassName: default
+
+aiAnalyst:
+  name: "ai-analyst"
+  config:
+    admin:
+      email: ""
+      password: ""
+      secret: ""
+    printConsole: ""
+    db_connection_string: ""
+    backend_db_connection_string: ""
+    celery_db_connection_string: ""
+    openai_api_key: ""
+    azure_endpoint: ""
+    api_type: ""
+    azure_deployment: ""
+    azure_openai_version: ""
+    langchain: 
+      api_key: ""
+      tracing_enabled: "true"
+      endpoint: ""
+    redis_url: "redis://datrics-redis-master:6379"
+    storage:
+      enabled: "true"
+      host: "datrics-minio"
+      port: "9000"
+      access_key: ""
+      secret_key: ""
+      use_ssl: "false"
+      bucket: ""
+    base_url: ""
+  worker:
+    name: "ai-analyst-worker"
+    deployment:
+      labels: {}
+      annotations: {}
+      replicaCount: 1
+      podSecurityContext: {}
+      command: ["bash", "-c", "celery --app=agent.workers.worker.celery worker -Q celery_processor_queue --concurrency=3"]
+      resources: {}
+    serviceAccount:
+      create: true
+      name: ""
+      labels: {}
+      annotations: {}
+  backend:
+    name: "ai-analyst-backend"    
+    service:
+      type: ClusterIP
+      labels: {}
+      annotations: {}
+      loadBalancerSourceRanges: []
+      loadBalancerIP: ""
+    deployment:
+      labels: {}
+      annotations: {}
+      replicaCount: 1
+      podSecurityContext: {}
+    initdb:
+      command: ["sh", "-c", "alembic upgrade head"]
+      resources: {}
+    flower:
+      enabled: true
+      command: ["bash", "-c", "celery --app=agent.workers.worker.celery flower -Q celery_processor_queue"]
+      containerPort: "5555"
+      service:
+        port: "5555"
+      resources: {}
+    api:
+      command: ["/bin/bash"]
+      args: ["-c", "uvicorn server:app --timeout-keep-alive 180 --host=0.0.0.0 --port=8000 --forwarded-allow-ips='*' --proxy-headers"]
+      containerPort: "8000"
+      service:
+        port: "8000"
+      resources: {}
+      startupProbe:
+        failureThreshold: 3
+        httpGet:
+          path: /health-check
+          port: api
+          scheme: HTTP
+        periodSeconds: 20
+        successThreshold: 1
+        timeoutSeconds: 5
+      livenessProbe:
+        failureThreshold: 5
+        httpGet:
+          path: /health-check
+          port: api
+          scheme: HTTP
+        initialDelaySeconds: 30
+        periodSeconds: 15
+        successThreshold: 1
+        timeoutSeconds: 10
+    serviceAccount:
+      create: true
+      name: ""
+      labels: {}
+      annotations: {}
+
+aiprep:
+  name: aiprep
+  config:
+    printConsole: ""
+    db_connection_string: ""
+    openai_api_key: ""
+    storage:
+      enabled: "true"
+      host: "datrics-minio"
+      port: "9000"
+      access_key: ""
+      secret_key: ""
+      use_ssl: "false"
+      bucket: ""
+    base_url: ""
+  service:
+    type: ClusterIP
+    port: 8000
+    labels: {}
+    annotations: {}
+    loadBalancerSourceRanges: []
+    loadBalancerIP: ""
+  serviceAccount:
+    create: true
+    name: ""
+    labels: {}
+    annotations: {}
+  deployment:
+    replicas: 1
+    labels: {}
+    annotations: {}
+    replicaCount: 1
+    podSecurityContext: {}
+    command: ["/bin/bash", "-c", "uvicorn server:app --host=0.0.0.0 --port=8000 --workers=4"]
+    securityContext: {}
+    resources: {}
+    containerPort: 8000
+  init:
+    command: ["/bin/bash", "-c", "alembic upgrade head"]
+    resources: {}
+    securityContext: {}
+    labels: {}
+    annotations: {}
+    podSecurityContext: {}
