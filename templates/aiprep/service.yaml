@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "datrics.fullname" . }}-{{ .Values.aiprep.name }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.aiprep.service.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with .Values.aiprep.service.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.aiprep.service.type }}
+  {{- with .Values.aiprep.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  loadBalancerIP: {{ .Values.aiprep.service.loadBalancerIP }}
+  ports:
+    - name: aiprep
+      port: {{ .Values.aiprep.service.port }}
+      targetPort: aiprep
+      protocol: TCP
+  selector:
+    {{- include "datrics.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.aiprep.name }}

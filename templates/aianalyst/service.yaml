@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "datrics.fullname" . }}-{{ .Values.aiAnalyst.name }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.aiAnalyst.backend.service.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with .Values.aiAnalyst.backend.service.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.aiAnalyst.backend.service.type }}
+  {{- with .Values.aiAnalyst.backend.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  loadBalancerIP: {{ .Values.aiAnalyst.backend.service.loadBalancerIP }}
+  ports:
+    {{- if .Values.aiAnalyst.backend.flower.enabled }}
+    - name: flower
+      port: {{ .Values.aiAnalyst.backend.flower.service.port }}
+      targetPort: flower
+      protocol: TCP
+    {{- end }}
+    - name: api
+      port: {{ .Values.aiAnalyst.backend.api.service.port }}
+      targetPort: api
+      protocol: TCP
+  selector:
+    {{- include "datrics.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.aiAnalyst.backend.name }}

@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "datrics.fullname" . }}-{{ .Values.aiprep.name }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.aiprep.deployment.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with.Values.aiprep.deployment.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.aiprep.deployment.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "datrics.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.aiprep.name }}
+  template:
+    metadata:
+      annotations:
+      {{- with .Values.aiprep.deployment.annotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- with.Values.aiprep.deployment.labels }}
+            {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- include "datrics.labels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.aiprep.name }}
+    spec:
+      {{- with .Values.images.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "aiprep.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.aiprep.deployment.podSecurityContext | nindent 8 }}
+      {{ if .Values.aiprep.init.enabled }}
+      initContainers:
+        - name: migration
+          {{- with.Values.aiprep.init.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+          - name: DB_URL
+            value: {{ .Values.aiprep.config.db_connection_string | quote }}
+          image: "{{ .Values.images.aiPrepImage.repository }}:{{ .Values.images.aiPrepImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.images.aiPrepImage.pullPolicy }}          
+          resources:
+            {{- toYaml .Values.aiprep.init.resources | nindent 12 }}
+      {{ end }}
+      containers:
+        - name: {{ .Values.aiprep.name }}
+          {{- with.Values.aiprep.deployment.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "datrics.commonEnv" . | nindent 12 }}
+            - name: UVICORN_PORT
+              value: {{ .Values.aiprep.deployment.containerPort | quote }}
+            - name: DB_URL
+              value: {{ .Values.aiprep.config.db_connection_string | quote }}
+            - name: OPENAI_API_KEY
+              value: {{ .Values.aiprep.config.openai_api_key | quote }}
+            - name: USE_STORAGE
+              value: {{ .Values.aiprep.config.storage.enabled | quote }}
+            - name: STORAGE_HOST
+              value: {{ (printf "%s:%s" .Values.aiprep.config.storage.host .Values.aiprep.config.storage.port) | quote }}
+            - name: STORAGE_ACCESS_KEY
+              value: {{ .Values.aiprep.config.storage.access_key | default .Values.minio.rootUser | quote }}
+            - name: STORAGE_SECRET_KEY
+              value: {{ .Values.aiprep.config.storage.secret_key | default .Values.minio.rootPassword | quote }}
+            - name: STORAGE_IS_SECURE
+              value: {{ .Values.aiprep.config.storage.use_ssl | quote }}
+            - name: STORAGE_BUCKET
+              value: {{ .Values.aiprep.config.storage.bucket | quote }}
+            - name: BASE_URL
+              value: {{ .Values.aiprep.config.base_url | quote }}
+            {{- with .Values.aiprep.deployment.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.commonEnv }}
+              {{ toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "datrics.fullname" . }}-config
+          image: "{{ .Values.images.aiPrepImage.repository }}:{{ .Values.images.aiPrepImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.images.aiPrepImage.pullPolicy }}
+          ports:
+            - name: aiprep
+              containerPort: {{ .Values.aiprep.deployment.containerPort }}
+              protocol: TCP
+          {{- with .Values.aiprep.deployment.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.aiprep.deployment.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.aiprep.deployment.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.aiprep.deployment.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.aiprep.deployment.securityContext | nindent 12 }}
+          {{- with .Values.aiprep.deployment.volumeMounts }}
+          volumeMounts:
+              {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.aiprep.deployment.extraContainerConfig }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- with .Values.aiprep.deployment.sidecars }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.aiprep.deployment.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.aiprep.deployment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.aiprep.deployment.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.aiprep.deployment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

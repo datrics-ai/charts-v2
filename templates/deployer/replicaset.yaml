@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: {{ include "datrics.fullname" . }}-{{ .Values.deployer.name }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.deployer.deployment.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with.Values.deployer.deployment.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.deployer.deployment.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "datrics.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.deployer.name }}
+  template:
+    metadata:
+      annotations:
+      {{- with .Values.deployer.deployment.annotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- with.Values.deployer.deployment.labels }}
+            {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- include "datrics.labels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.deployer.name }}
+    spec:
+      {{- with .Values.images.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "deployer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.deployer.deployment.podSecurityContext | nindent 8 }}
+      containers:
+        - image: prom/statsd-exporter:latest
+          imagePullPolicy: Always
+          name: statsd-exporter
+        - name: {{ .Values.deployer.name }}
+          {{- with.Values.deployer.deployment.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with.Values.deployer.deployment.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "datrics.commonEnv" . | nindent 12 }}
+            - name: APP_DOMAIN
+              value: {{ .Values.common.domain | quote }}
+            - name: APP_ENV
+              value: {{ .Values.common.env | quote }}
+            - name: APP_WORKERS_MODE
+              value: {{ .Values.common.workers_mode | quote }}
+            - name: DEFAULT_RUNNER_TAG
+              value: {{ .Values.deployer.config.default_runner_tag | quote }}
+            - name: DEPLOYMENTS_STREAM
+              value: {{ .Values.deployer.config.streams.deployments | quote }}
+            - name: PIPELINE_RESULTS_STREAM
+              value: {{ .Values.deployer.config.streams.results | quote }}
+            - name: POSTGRES_URL
+              value: {{ .Values.deployer.config.db_connection_string | quote }}
+            - name: AI_DATA_PREP_SERVICE_URL
+              value: {{ .Values.deployer.config.ai_data_prep_service_url | quote }}
+            - name: BACKEND_REDIS_HOST
+              value: {{ .Values.deployer.config.redis.host | quote }}
+            - name: BACKEND_REDIS_DB
+              value: {{ .Values.deployer.config.redis.db | quote }}
+            - name: BACKEND_REDIS_PORT
+              value: {{ .Values.deployer.config.redis.port | quote }}
+            - name: DEFAULT_PIPELINE_VERSION
+              value: {{ .Values.images.pipelineImage.tag | quote }}
+            - name: MINIO_HOST_URL
+              value: {{ (printf "%s:%s" .Values.deployer.config.storage.host .Values.deployer.config.storage.port) | quote }}
+            - name: MINIO_USE_SSL
+              value: {{ .Values.deployer.config.storage.use_ssl | quote }}
+            - name: MINIO_ACCESS_KEY
+              value: {{ .Values.deployer.config.storage.access_key | default .Values.minio.rootUser | quote }}
+            - name: MINIO_SECRET_KEY
+              value: {{ .Values.deployer.config.storage.secret_key | default .Values.minio.rootPassword | quote }}
+            {{- with .Values.deployer.deployment.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.commonEnv }}
+              {{ toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "datrics.fullname" . }}-config
+          image: "{{ .Values.images.pipelineImage.repository }}:{{ .Values.images.pipelineImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.images.pipelineImage.pullPolicy }}
+          ports:
+            - name: deployer
+              containerPort: {{ .Values.deployer.deployment.containerPort }}
+              protocol: TCP
+          {{- with .Values.deployer.deployment.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployer.deployment.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.deployer.deployment.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.deployer.deployment.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.deployer.deployment.securityContext | nindent 12 }}
+          {{- with .Values.deployer.deployment.extraContainerConfig }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- with .Values.deployer.deployment.sidecars }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.deployer.deployment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.deployer.deployment.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.deployer.deployment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

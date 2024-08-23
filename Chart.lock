@@ -1,0 +1,12 @@
+dependencies:
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 19.5.3
+- name: minio
+  repository: https://charts.min.io/
+  version: 5.2.0
+- name: keda
+  repository: https://kedacore.github.io/charts
+  version: 2.14.2
+digest: sha256:82d2a5184c7598c8136a49415641a9938c2b94035b2023f5db41ddd5b9f36108
+generated: "2024-08-21T17:28:36.568005-07:00"

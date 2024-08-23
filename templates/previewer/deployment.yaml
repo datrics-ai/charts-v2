@@ -1,0 +1,170 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "datrics.fullname" . }}-{{ .Values.previewer.name }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.previewer.deployment.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with.Values.previewer.deployment.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.previewer.deployment.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "datrics.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.previewer.name }}
+  template:
+    metadata:
+      annotations:
+      {{- with .Values.previewer.deployment.annotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- with.Values.previewer.deployment.labels }}
+            {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- include "datrics.labels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.previewer.name }}
+    spec:
+      {{- with .Values.images.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "previewer.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.previewer.deployment.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.previewer.name }}-pivottable
+          {{- with.Values.previewer.pivottable.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with.Values.previewer.pivottable.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "datrics.commonEnv" . | nindent 12 }}
+            {{- include "datrics.previewer.env_vars" . | nindent 12 }}
+            - name: PORT
+              value: {{ .Values.previewer.pivottable.containerPort | quote }}
+            - name: HOST
+              value: 0.0.0.0
+            {{- with .Values.previewer.pivottable.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.commonEnv }}
+              {{ toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "datrics.fullname" . }}-config
+          image: "{{ .Values.images.previewerImage.repository }}:{{ .Values.images.previewerImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.images.previewerImage.pullPolicy }}
+          ports:
+            - name: pivottable
+              containerPort: {{ .Values.previewer.pivottable.containerPort }}
+              protocol: TCP
+          {{- with .Values.previewer.pivottable.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.previewer.pivottable.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.previewer.pivottable.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.previewer.pivottable.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.previewer.pivottable.securityContext | nindent 12 }}
+          {{- with .Values.previewer.pivottable.volumeMounts }}
+          volumeMounts:
+              {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.previewer.pivottable.extraContainerConfig }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
+        - name: {{ .Values.previewer.name }}-previewer
+          {{- with.Values.previewer.previewer.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with.Values.previewer.previewer.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "datrics.commonEnv" . | nindent 12 }}
+            {{- include "datrics.previewer.env_vars" . | nindent 12 }}
+            - name: PORT
+              value: {{ .Values.previewer.previewer.containerPort | quote }}
+            - name: HOST
+              value: 0.0.0.0
+            - name: PAGE_SIZE
+              value: {{ .Values.previewer.previewer.config.pageSize | quote }}
+            {{- with .Values.previewer.previewer.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.commonEnv }}
+              {{ toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "datrics.fullname" . }}-config
+          image: "{{ .Values.images.previewerImage.repository }}:{{ .Values.images.previewerImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.images.previewerImage.pullPolicy }}
+          ports:
+            - name: previewer
+              containerPort: {{ .Values.previewer.previewer.containerPort }}
+              protocol: TCP
+          {{- with .Values.previewer.previewer.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.previewer.previewer.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.previewer.previewer.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.previewer.previewer.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.previewer.previewer.securityContext | nindent 12 }}
+          {{- with .Values.previewer.previewer.volumeMounts }}
+          volumeMounts:
+              {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.previewer.previewer.extraContainerConfig }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- with .Values.previewer.deployment.sidecars }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.previewer.deployment.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.previewer.deployment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.previewer.deployment.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.previewer.deployment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

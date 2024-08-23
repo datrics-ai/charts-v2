@@ -1,0 +1,60 @@
+{{- if .Values.aiprepIngress.enabled -}}
+{{- $svcPort := .Values.aiprep.service.port -}}
+{{- if and .Values.aiprepIngress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}
+  {{- if not (hasKey .Values.aiprepIngress.annotations "kubernetes.io/ingress.class") }}
+  {{- $_ := set .Values.aiprepIngress.annotations "kubernetes.io/ingress.class" .Values.aiprepIngress.className}}
+  {{- end }}
+{{- end }}
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1
+{{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ include "datrics.fullname" . }}-{{ .Values.aiprep.name }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+  {{- with .Values.aiprepIngress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.aiprepIngress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.aiprepIngress.className }}
+  {{- end }}
+  {{- if .Values.aiprepIngress.tls }}
+  tls:
+    {{- range .Values.aiprepIngress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.aiprepIngress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
+            pathType: {{ .pathType }}
+            {{- end }}
+            backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ include "datrics.fullname" $ }}-{{ $.Values.aiprep.name }}
+                port:
+                  number: {{ $svcPort }}
+              {{- else }}
+              serviceName: {{ include "datrics.fullname" $ }}-{{ $.Values.aiprep.name }}
+              servicePort: {{ $svcPort }}
+              {{- end }}
+          {{- end }}
+    {{- end }}
+{{- end }}

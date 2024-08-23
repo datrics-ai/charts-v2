@@ -1,0 +1,115 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "datrics.fullname" . }}-{{ .Values.fe.name }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.fe.deployment.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with.Values.fe.deployment.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  replicas: {{ .Values.fe.deployment.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "datrics.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.fe.name }}
+  template:
+    metadata:
+      annotations:
+      {{- with .Values.fe.deployment.annotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- with.Values.fe.deployment.labels }}
+            {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- include "datrics.labels" . | nindent 8 }}
+        app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.fe.name }}
+    spec:
+      {{- with .Values.images.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "fe.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.fe.deployment.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.fe.name }}
+          {{- with.Values.fe.deployment.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- include "datrics.commonEnv" . | nindent 12 }}
+            - name: APP_DOMAIN
+              value: {{ .Values.common.domain | quote }}
+            - name: APP_ENV
+              value: {{ .Values.common.env | quote }}
+            - name: APP_WORKERS_MODE
+              value: {{ .Values.common.workers_mode | quote }}
+            - name: APP_CHAT_AI_ANALYST_URL
+              value: {{ .Values.aiAnalystIngress.hostname | quote }}
+            - name: APP_BUCKET
+              value: {{ .Values.common.storage_bucket | quote }}
+            {{- with .Values.fe.deployment.extraEnv }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+            {{- with .Values.commonEnv }}
+              {{ toYaml . | nindent 12 }}
+            {{- end }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "datrics.fullname" . }}-config
+          image: "{{ .Values.images.feImage.repository }}:{{ .Values.images.feImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.images.feImage.pullPolicy }}
+          ports:
+            - name: fe
+              containerPort: {{ .Values.fe.deployment.containerPort }}
+              protocol: TCP
+          {{- with .Values.fe.deployment.startupProbe }}
+          startupProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.fe.deployment.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.fe.deployment.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.fe.deployment.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.fe.deployment.securityContext | nindent 12 }}
+          {{- with .Values.fe.deployment.volumeMounts }}
+          volumeMounts:
+              {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.fe.deployment.extraContainerConfig }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
+        {{- with .Values.fe.deployment.sidecars }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with .Values.fe.deployment.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fe.deployment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fe.deployment.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.fe.deployment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

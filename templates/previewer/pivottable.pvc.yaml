@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with.Values.previewer.pivottable.pvc.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.previewer.pivottable.pvc.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: pivottable-cache
+spec:
+  {{- with.Values.previewer.pivottable.pvc.accessModes }}
+  accessModes:
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+  resources:
+    {{- toYaml .Values.previewer.pivottable.pvc.resources | nindent 12 }}
+  storageClassName: {{ .Values.previewer.pivottable.pvc.storageClassName | quote }}

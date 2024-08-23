@@ -1,0 +1,11 @@
+# Contains environment variables that may need to be overwritten by extraEnvs.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "datrics.fullname" . }}-config
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+data:  
+  DATRICS_ENV: "local_kubernetes"

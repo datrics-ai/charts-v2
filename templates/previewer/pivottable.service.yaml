@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "datrics.fullname" . }}-{{ .Values.previewer.name }}-pivottable
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.previewer.pivottable.service.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with .Values.previewer.pivottable.service.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  type: {{ .Values.previewer.pivottable.service.type }}
+  {{- with .Values.previewer.pivottable.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  loadBalancerIP: {{ .Values.previewer.pivottable.service.loadBalancerIP }}
+  ports:
+    - name: pivottable
+      port: {{ .Values.previewer.pivottable.service.port }}
+      targetPort: pivottable
+      protocol: TCP
+  selector:
+    {{- include "datrics.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: {{ include "datrics.fullname" . }}-{{ .Values.previewer.name }}

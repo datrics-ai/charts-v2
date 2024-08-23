@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    {{- include "datrics.annotations" . | nindent 4 }}
+    {{- with.Values.previewer.previewer.pvc.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  labels:
+    {{- include "datrics.labels" . | nindent 4 }}
+    {{- with.Values.previewer.previewer.pvc.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  name: previewer-cache
+spec:
+  {{- with.Values.previewer.previewer.pvc.accessModes }}
+  accessModes:
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
+  resources:
+    {{- toYaml .Values.previewer.previewer.pvc.resources | nindent 12 }}
+  storageClassName: {{ .Values.previewer.previewer.pvc.storageClassName | quote }}
