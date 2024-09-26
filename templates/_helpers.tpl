@@ -143,3 +143,131 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
+
+{{/*
+Define API endpoint
+*/}}
+{{- define "datrics.apiEndpoint" -}}
+{{- if .Values.common.domain -}}
+https://api.{{ .Values.common.domain }}
+{{- else -}}
+http://{{ include "datrics.fullname" . }}-{{ .Values.api.name }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.api.service.port }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define Webapp endpoint
+*/}}
+{{- define "datrics.feEndpoint" -}}
+{{- if .Values.common.domain -}}
+https://app.{{ .Values.common.domain }}
+{{- else -}}
+http://{{ include "datrics.fullname" . }}-{{ .Values.fe.name }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.fe.service.port }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define Ai Analyst endpoint
+*/}}
+{{- define "datrics.aiAnalystEndpoint" -}}
+{{- if .Values.common.domain -}}
+https://ai-analyst-api.{{ .Values.common.domain }}
+{{- else -}}
+http://{{ include "datrics.fullname" . }}-{{ .Values.aiAnalyst.name }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.aiAnalyst.backend.api.service.port }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define Redis host
+*/}}
+{{- define "datrics.redisHost" -}}
+{{- if .Values.redis.enabled -}}
+{{ include "datrics.fullname" . }}-redis-master
+{{- else -}}
+{{ .Values.common.redis.host }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define Redis port
+*/}}
+{{- define "datrics.redisPort" -}}
+{{- if .Values.redis.enabled -}}
+6379
+{{- else -}}
+{{ .Values.common.redis.port }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define Redis DB
+*/}}
+{{- define "datrics.redisDb" -}}
+0
+{{- end -}}
+
+{{/*
+Define MinIO host
+*/}}
+{{- define "datrics.minioHost" -}}
+{{- if .Values.minio.enabled -}}
+{{ include "datrics.fullname" . }}-minio
+{{- else -}}
+{{ .Values.common.storage.host }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define MinIO port
+*/}}
+{{- define "datrics.minioPort" -}}
+{{- if .Values.minio.enabled -}}
+9000
+{{- else -}}
+{{ .Values.common.storage.port }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define MinIO access key
+*/}}
+{{- define "datrics.minioAccessKey" -}}
+{{- if .Values.minio.enabled -}}
+{{ .Values.minio.rootUser }}
+{{- else -}}
+{{ .Values.common.storage.access_key }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define MinIO secret key
+*/}}
+{{- define "datrics.minioSecretKey" -}}
+{{- if .Values.minio.enabled -}}
+{{ .Values.minio.rootPassword }}
+{{- else -}}
+{{ .Values.common.storage.secret_key }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define MinIO use SSL
+*/}}
+{{- define "datrics.minioUseSSL" -}}
+{{- if .Values.minio.enabled -}}
+false
+{{- else -}}
+{{ .Values.common.storage.use_ssl }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Define MinIO bucket
+*/}}
+{{- define "datrics.minioBucket" -}}
+{{- if .Values.minio.enabled -}}
+{{ (index .Values.minio.buckets 0).name }}
+{{- else -}}
+{{ .Values.common.storage_bucket }}
+{{- end -}}
+{{- end -}}

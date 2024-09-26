@@ -16,8 +16,18 @@ common:
   storage_bucket: datrics.local
   env: local
   workers_mode: false
-  fe_base_url: "http://app.datrics.local"
-  api_base_url: "https://api.datrics.local/"
+  db:
+    host: ""
+    port: ""
+    username: ""
+    password: ""
+    db: ""
+    ssl_mode: ""
+  
+  # use only when redis subchart is disabled
+  # redis:
+  #   host: ""
+  #   port: ""
   deployer_base_url: "http://deployer-pipeline2-deployer:8001"
 
 images:
@@ -111,11 +121,39 @@ aiAnalystIngress:
   tls: []
 
 redis:
-  enabled: false # if false, external will be used
-  # redis values should go here
+  enabled: true # if false, external will be used, see common.redis.host, common.redis.port
+  auth:
+    enabled: false
+  commonConfiguration: timeout 180
+  image:
+    version: 7.2.0
+  master:
+    extraFlags:
+    - --maxmemory-policy volatile-lru
+    - --maxmemory 5G
+    - --maxmemory-samples 10
+    persistence:
+      size: 20Gi
+    resources:
+      limits:
+        cpu: 500m
+        memory: 7Gi
+      requests:
+        cpu: 100m
+        memory: 2Gi
+  replica:
+    replicaCount: 0
 
 minio:
-  enabled: false # if false, external will be used
+  enabled: true # if false, external will be used
+  rootPassword: 8awCQYr3M8xHX9oQvO2j
+  rootUser: WPnCSBWj
+  buckets: 
+  - name: storage.datrics.ai
+    policy: none
+  - name: copilot-cfo
+    policy: none
+
   # minio values should go here
 
 keda:
@@ -148,11 +186,6 @@ api:
     sentry_dsn: ""
     default_pipeline_version: ""
     db:
-      host: ""
-      port: ""
-      username: ""
-      password: ""
-      db: ""
       connection_name: "production"
     redis:
       host: "datrics-redis-master"
