@@ -178,6 +178,21 @@ http://{{ include "datrics.fullname" . }}-{{ .Values.aiAnalyst.name }}.{{ .Relea
 {{- end -}}
 
 {{/*
+Define Ai Prep endpoint
+*/}}
+{{- define "datrics.aiPrepEndpoint" -}}
+{{- if .Values.common.domain -}}
+https://ai-prep-api.{{ .Values.common.domain }}
+{{- else -}}
+http://{{ include "datrics.fullname" . }}-{{ .Values.aiprep.name }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.aiprep.service.port }}
+{{- end -}}
+{{- end -}}
+
+{{- define "datrics.deployerEndpoint" -}}
+http://{{ include "datrics.fullname" . }}-{{ .Values.deployer.name }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.deployer.service.port }}
+{{- end -}}
+
+{{/*
 Define Redis host
 */}}
 {{- define "datrics.redisHost" -}}
@@ -205,6 +220,14 @@ Define Redis DB
 {{- define "datrics.redisDb" -}}
 0
 {{- end -}}
+
+{{/*
+Define Redis URL
+*/}}
+{{- define "datrics.redisUrl" -}}
+redis://{{ include "datrics.redisHost" . }}:{{ include "datrics.redisPort" . }}
+{{- end -}}
+
 
 {{/*
 Define MinIO host
@@ -255,7 +278,7 @@ Define MinIO use SSL
 */}}
 {{- define "datrics.minioUseSSL" -}}
 {{- if .Values.minio.enabled -}}
-false
+False
 {{- else -}}
 {{ .Values.common.storage.use_ssl }}
 {{- end -}}
@@ -270,4 +293,40 @@ Define MinIO bucket
 {{- else -}}
 {{ .Values.common.storage_bucket }}
 {{- end -}}
+{{- end -}}
+
+{{/*
+Define backend DB connection string (async)
+*/}}
+{{- define "datrics.backendDbConnectionAsync" -}}
+postgresql+asyncpg://{{ .Values.common.db.username }}:{{ .Values.common.db.password }}@{{ .Values.common.db.host }}:{{ .Values.common.db.port }}/{{ .Values.common.db.db }}?ssl={{ .Values.common.db.ssl_mode }}
+{{- end -}}
+
+{{/*
+Define backend DB connection string (sync)
+*/}}
+{{- define "datrics.backendDbConnectionSync" -}}
+postgresql+psycopg2://{{ .Values.common.db.username }}:{{ .Values.common.db.password }}@{{ .Values.common.db.host }}:{{ .Values.common.db.port }}/{{ .Values.common.db.db }}?sslmode={{ .Values.common.db.ssl_mode }}
+{{- end -}}
+
+
+{{/*
+Define AI Analyst DB connection string (async)
+*/}}
+{{- define "datrics.aiAnalystDbConnectionAsync" -}}
+postgresql+asyncpg://{{ .Values.common.aiAnalystDb.username }}:{{ .Values.common.aiAnalystDb.password }}@{{ .Values.common.aiAnalystDb.host }}:{{ .Values.common.aiAnalystDb.port }}/{{ .Values.common.aiAnalystDb.db }}?ssl={{ .Values.common.aiAnalystDb.ssl_mode }}
+{{- end -}}
+
+{{/*
+Define AI Analyst DB connection string (Celery)
+*/}}
+{{- define "datrics.aiAnalystDbConnectionCelery" -}}
+db+postgresql://{{ .Values.common.aiAnalystDb.username }}:{{ .Values.common.aiAnalystDb.password }}@{{ .Values.common.aiAnalystDb.host }}:{{ .Values.common.aiAnalystDb.port }}/{{ .Values.common.aiAnalystDb.db }}?sslmode={{ .Values.common.aiAnalystDb.ssl_mode }}
+{{- end -}}
+
+{{/*
+Define AI Prep DB connection string (sync)
+*/}}
+{{- define "datrics.aiPrepDbSync" -}}
+postgresql+psycopg2://{{ .Values.common.aiPrepDb.username }}:{{ .Values.common.aiPrepDb.password }}@{{ .Values.common.aiPrepDb.host }}:{{ .Values.common.aiPrepDb.port }}/{{ .Values.common.aiPrepDb.db }}?sslmode={{ .Values.common.aiPrepDb.ssl_mode }}
 {{- end -}}

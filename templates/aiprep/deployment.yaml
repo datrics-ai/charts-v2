@@ -64,23 +64,23 @@ spec:
             - name: UVICORN_PORT
               value: {{ .Values.aiprep.deployment.containerPort | quote }}
             - name: DB_URL
-              value: {{ .Values.aiprep.config.db_connection_string | quote }}
+              value: {{ include "datrics.aiPrepDbSync" . | quote }}
             - name: OPENAI_API_KEY
-              value: {{ .Values.aiprep.config.openai_api_key | quote }}
+              value: {{ .Values.common.llm.openai_api_key | quote }}
             - name: USE_STORAGE
               value: {{ .Values.aiprep.config.storage.enabled | quote }}
             - name: STORAGE_HOST
-              value: {{ (printf "%s:%s" .Values.aiprep.config.storage.host .Values.aiprep.config.storage.port) | quote }}
+              value: {{ (printf "%s:%s" (include "datrics.minioHost" .) (include "datrics.minioPort" .)) | quote }}
             - name: STORAGE_ACCESS_KEY
-              value: {{ .Values.aiprep.config.storage.access_key | default .Values.minio.rootUser | quote }}
+              value: {{ include "datrics.minioAccessKey" . | quote }}
             - name: STORAGE_SECRET_KEY
-              value: {{ .Values.aiprep.config.storage.secret_key | default .Values.minio.rootPassword | quote }}
+              value: {{ include "datrics.minioSecretKey" . | quote }}
             - name: STORAGE_IS_SECURE
-              value: {{ .Values.aiprep.config.storage.use_ssl | quote }}
+              value: {{ include "datrics.minioUseSSL" . | quote }}
             - name: STORAGE_BUCKET
-              value: {{ .Values.aiprep.config.storage.bucket | quote }}
+              value: {{ include "datrics.minioBucket" . | quote }}
             - name: BASE_URL
-              value: {{ .Values.aiprep.config.base_url | quote }}
+              value: {{ include "datrics.aiPrepEndpoint" . | quote }}
             {{- with .Values.aiprep.deployment.extraEnv }}
               {{- toYaml . | nindent 12 }}
             {{- end }}

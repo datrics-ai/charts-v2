@@ -66,25 +66,25 @@ spec:
             - name: PIPELINE_RESULTS_STREAM
               value: {{ .Values.deployer.config.streams.results | quote }}
             - name: POSTGRES_URL
-              value: {{ .Values.deployer.config.db_connection_string | quote }}
+              value: {{ include "datrics.backendDbConnectionSync" . | quote }}
             - name: AI_DATA_PREP_SERVICE_URL
-              value: {{ .Values.deployer.config.ai_data_prep_service_url | quote }}
+              value: {{ include "datrics.aiPrepEndpoint" . | quote }}
             - name: BACKEND_REDIS_HOST
-              value: {{ .Values.deployer.config.redis.host | quote }}
+              value: {{ include "datrics.redisHost" . | quote }}
             - name: BACKEND_REDIS_DB
-              value: {{ .Values.deployer.config.redis.db | quote }}
+              value: {{ include "datrics.redisDb" . | quote }}
             - name: BACKEND_REDIS_PORT
-              value: {{ .Values.deployer.config.redis.port | quote }}
+              value: {{ include "datrics.redisPort" . | quote }}
             - name: DEFAULT_PIPELINE_VERSION
               value: {{ .Values.images.pipelineImage.tag | quote }}
             - name: MINIO_HOST_URL
-              value: {{ (printf "%s:%s" .Values.deployer.config.storage.host .Values.deployer.config.storage.port) | quote }}
+              value: {{ (printf "%s:%s" (include "datrics.minioHost" .) (include "datrics.minioPort" .)) | quote }}
             - name: MINIO_USE_SSL
-              value: {{ .Values.deployer.config.storage.use_ssl | quote }}
+              value: {{ include "datrics.minioUseSSL" . | quote }}
             - name: MINIO_ACCESS_KEY
-              value: {{ .Values.deployer.config.storage.access_key | default .Values.minio.rootUser | quote }}
+              value: {{ include "datrics.minioAccessKey" . | quote }}
             - name: MINIO_SECRET_KEY
-              value: {{ .Values.deployer.config.storage.secret_key | default .Values.minio.rootPassword | quote }}
+              value: {{ include "datrics.minioSecretKey" . | quote }}
             {{- with .Values.deployer.deployment.extraEnv }}
               {{- toYaml . | nindent 12 }}
             {{- end }}

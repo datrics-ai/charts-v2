@@ -41,6 +41,15 @@ spec:
       serviceAccountName: {{ include "api.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.api.deployment.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: initdb
+          image: "{{ .Values.images.apiImage.repository }}:{{ .Values.images.apiImage.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.images.apiImage.pullPolicy }}
+          command: ["npm", "run", "prod"]
+          resources:
+          {{- toYaml .Values.api.setup.resources | nindent 12 }}
+          env:
+            {{- include "datrics.api.env_vars" . | nindent 12 }}
       containers:
         - name: {{ .Values.api.name }}
           {{- with.Values.api.deployment.command }}

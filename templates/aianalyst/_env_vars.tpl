@@ -1,40 +1,42 @@
 {{- define "datrics.aiAnalyst.env_vars" -}}
 - name: DB_URL
-  value: {{ .Values.aiAnalyst.config.db_connection_string | quote }}
+  value: {{ include "datrics.aiAnalystDbConnectionAsync" . | quote }}
 - name: CELERY_BACKEND
-  value: {{ .Values.aiAnalyst.config.celery_db_connection_string | quote }}
+  value: {{ include "datrics.aiAnalystDbConnectionCelery" . | quote }}
 - name: BACKEND_DB_URl
-  value: {{ .Values.aiAnalyst.config.backend_db_connection_string | quote }}
+  value: {{ include "datrics.backendDbConnectionAsync" . | quote }}
 - name: OPENAI_API_KEY
-  value: {{ .Values.aiAnalyst.config.openai_api_key | quote }}
+  value: {{ .Values.common.llm.openai_api_key | quote }}
 - name: AZURE_ENDPOINT
-  value: {{ .Values.aiAnalyst.config.azure_endpoint | quote }}
+  value: {{ .Values.common.llm.azure_endpoint | quote }}
 - name: API_TYPE
-  value: {{ .Values.aiAnalyst.config.api_type | quote }}
+  value: {{ .Values.common.llm.api_type | quote }}
 - name: AZURE_DEPLOYMENT
-  value: {{ .Values.aiAnalyst.config.azure_deployment | quote }}
+  value: {{ .Values.common.llm.azure_deployment | quote }}
 - name: AZURE_OPENAI_VERSION
-  value: {{ .Values.aiAnalyst.config.azure_openai_version | quote }}
+  value: {{ .Values.common.llm.azure_openai_version | quote }}
 - name: LANGCHAIN_API_KEY
-  value: {{ .Values.aiAnalyst.config.langchain.api_key | quote }}
+  value: {{ .Values.common.langchain.api_key | quote }}
 - name: LANGCHAIN_TRACING_V2
-  value: {{ .Values.aiAnalyst.config.langchain.tracing_enabled | quote }}
+  value: {{ .Values.common.langchain.tracing_enabled | quote }}
 - name: LANGCHAIN_ENDPOINT
-  value: {{ .Values.aiAnalyst.config.langchain.endpoint | quote }}
+  value: {{ .Values.common.langchain.endpoint | quote }}
 - name: REDIS_URL
-  value: {{ .Values.aiAnalyst.config.redis_url | quote }}
+  value: {{ include "datrics.redisUrl" . | quote }}
 - name: USE_STORAGE
   value: {{ .Values.aiAnalyst.config.storage.enabled | quote }}
 - name: STORAGE_HOST
-  value: {{ (printf "%s:%s" .Values.aiAnalyst.config.storage.host .Values.aiAnalyst.config.storage.port) | quote }}
+  value: {{ (printf "%s:%s" (include "datrics.minioHost" .) (include "datrics.minioPort" .)) | quote }}
 - name: STORAGE_ACCESS_KEY
-  value: {{ .Values.aiAnalyst.config.storage.access_key | default .Values.minio.rootUser | quote }}
+  value: {{ include "datrics.minioAccessKey" . | quote }}
 - name: STORAGE_SECRET_KEY
-  value: {{ .Values.aiAnalyst.config.storage.secret_key | default .Values.minio.rootPassword | quote }}
+  value: {{ include "datrics.minioSecretKey" . | quote }}
 - name: STORAGE_IS_SECURE
-  value: {{ .Values.aiAnalyst.config.storage.use_ssl | quote }}
+  value: {{ include "datrics.minioUseSSL" . | quote }}
 - name: STORAGE_BUCKET
-  value: {{ .Values.aiAnalyst.config.storage.bucket | quote }}
+  value: {{ include "datrics.minioBucket" . | quote }}
 - name: BASE_URL
-  value: {{ .Values.aiAnalyst.config.base_url | quote }}
+  value: {{ include "datrics.aiAnalystEndpoint" . | quote }}
+- name: BACKEND_API
+  value: {{ include "datrics.apiEndpoint" . }}/api/v1/deploymentsV3
 {{- end -}}

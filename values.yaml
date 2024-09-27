@@ -16,19 +16,42 @@ common:
   storage_bucket: datrics.local
   env: local
   workers_mode: false
-  db:
-    host: ""
-    port: ""
-    username: ""
-    password: ""
-    db: ""
-    ssl_mode: ""
+  # db:
+  #   host: "<db-host>"
+  #   username: "<db-username>"
+  #   password: "<db-password>"
+  #   db: "<db-db>"
+  #   ssl_mode: "<db-sslmode>"
+  #   port: "<db-port>"
+  # aiAnalystDb:
+  #   host: "<db-host>"
+  #   username: "<db-username>"
+  #   password: "<db-password>"
+  #   db: "<db-db>"
+  #   ssl_mode: "<db-sslmode>"
+  #   port: "<db-port>"
+  # aiPrepDb:
+  #   host: "<db-host>"
+  #   username: "<db-username>"
+  #   password: "<db-password>"
+  #   db: "<db-db>"
+  #   ssl_mode: "<db-sslmode>"
+  #   port: "<db-port>"
+  # llm:
+  #   openai_api_key: "<openai-api-key>"
+  #   azure_endpoint: "<openai-azue-endpoint>"
+  #   api_type: "<llm: azure | openai>"
+  #   azure_deployment: "<openai-model-on-azure>"
+  #   azure_openai_version: "<openai-model-version-on-azure>"
+  # langchain: 
+  #   api_key: "<langsmith-api-key>"
+  #   tracing_enabled: "<langsmith-enabled>"
+  #   endpoint: "<langsmith-endpoint>"
   
   # use only when redis subchart is disabled
   # redis:
   #   host: ""
   #   port: ""
-  deployer_base_url: "http://deployer-pipeline2-deployer:8001"
 
 images:
    # -- Secrets with credentials to pull images from a private registry. Specified as name: value.
@@ -36,15 +59,15 @@ images:
   apiImage:
     repository: "registry.gitlab.com/datrics.ai/backend"
     pullPolicy: IfNotPresent
-    tag: "ba695164"
+    tag: "5fba6667"
   feImage:
     repository: "registry.gitlab.com/datrics.ai/frontend"
     pullPolicy: IfNotPresent
-    tag: "2.22.4"
+    tag: "2.22.4" #887893ce
   pipelineImage:
     repository: "registry.gitlab.com/datrics.ai/pipeline-2"
     pullPolicy: IfNotPresent
-    tag: "1367f177"
+    tag: "c81a6137"
   previewerImage:
     repository: "registry.gitlab.com/datrics.ai/data-previewer"
     pullPolicy: IfNotPresent
@@ -52,7 +75,7 @@ images:
   aiAnalystImage:
     repository: "registry.gitlab.com/datrics.ai/chat-data-prep-and-exploration"
     pullPolicy: IfNotPresent
-    tag: "0cdf1f2e"
+    tag: "e5c68048"
   aiPrepImage:
     repository: "registry.gitlab.com/datrics.ai/chat-data-prep-and-exploration"
     pullPolicy: IfNotPresent
@@ -146,14 +169,20 @@ redis:
 
 minio:
   enabled: true # if false, external will be used
-  rootPassword: 8awCQYr3M8xHX9oQvO2j
-  rootUser: WPnCSBWj
+  rootPassword: minio123
+  rootUser: minio
   buckets: 
   - name: storage.datrics.ai
     policy: none
-  - name: copilot-cfo
-    policy: none
-
+  persistence:
+    storageClass: "managed-premium"
+    enabled: true
+    size: 1000Gi
+  resources:
+    limits:
+      memory: 6Gi
+    requests:
+      memory: 3Gi
   # minio values should go here
 
 keda:
@@ -187,17 +216,6 @@ api:
     default_pipeline_version: ""
     db:
       connection_name: "production"
-    redis:
-      host: "datrics-redis-master"
-      port: "6379"
-      db: "0"
-    storage:
-      host: "datrics-minio"
-      port: "9000"
-      access_key: ""
-      secret_key: ""
-      use_ssl: "false"
-      bucket: ""
     email: 
       sender_email: ""
       mailgun:
@@ -208,10 +226,17 @@ api:
         listId: ""
     private_plan: "Enterprise"
     sentry_dsn: ""
-    default_pipeline_version: ""
     workers:
       downscale: "false"
       cloud_service: "azure"
+  setup:
+    resources:
+      limits:
+        cpu: "500m"
+        memory: "750Mi"
+      requests:
+        cpu: "200m"
+        memory: "500Mi"
   deployment:
     replicas: 1
     labels: {}
@@ -224,7 +249,7 @@ api:
         memory: "2G"
       requests:
         cpu: "500m"
-        memory: "750Mi"
+        memory: "750Mi"  
     containerPort: 3000
     startupProbe:
       httpGet:
@@ -342,6 +367,13 @@ deployer:
     command: ["/bin/bash"]
     args: ["-c", "gunicorn -k gevent -b 0.0.0.0:8001 deployment_run:app"]
     containerPort: "8001"
+    resources:
+      limits:
+        cpu: "1500m"
+        memory: "1G"
+      requests:
+        cpu: "1000m"
+        memory: "512Mi"
     startupProbe:
       httpGet:
         path: /
@@ -392,19 +424,12 @@ deployer:
       port: "9000"
       access_key: ""
       secret_key: ""
-      use_ssl: "false"
+      use_ssl: "False"
       bucket: ""
 
 previewer:
   name: "previewer"
   config:
-    storage:
-      host: "datrics-minio"
-      port: "9000"
-      access_key: ""
-      secret_key: ""
-      use_ssl: "false"
-      bucket: ""
     redis_cache_enabled: "false"
     fs_cache_dir: "/cache-directory"
     cache_enabled: "true"
@@ -477,29 +502,9 @@ aiAnalyst:
       email: ""
       password: ""
       secret: ""
-    printConsole: ""
-    db_connection_string: ""
-    backend_db_connection_string: ""
-    celery_db_connection_string: ""
-    openai_api_key: ""
-    azure_endpoint: ""
-    api_type: ""
-    azure_deployment: ""
-    azure_openai_version: ""
-    langchain: 
-      api_key: ""
-      tracing_enabled: "true"
-      endpoint: ""
-    redis_url: "redis://datrics-redis-master:6379"
+    printConsole: "true"
     storage:
       enabled: "true"
-      host: "datrics-minio"
-      port: "9000"
-      access_key: ""
-      secret_key: ""
-      use_ssl: "false"
-      bucket: ""
-    base_url: ""
   worker:
     name: "ai-analyst-worker"
     deployment:
@@ -508,7 +513,13 @@ aiAnalyst:
       replicaCount: 1
       podSecurityContext: {}
       command: ["bash", "-c", "celery --app=agent.workers.worker.celery worker -Q celery_processor_queue --concurrency=3"]
-      resources: {}
+      resources:
+        limits:
+          cpu: "3"
+          memory: 10Gi
+        requests:
+          cpu: "1"
+          memory: 4Gi
     serviceAccount:
       create: true
       name: ""
@@ -536,14 +547,26 @@ aiAnalyst:
       containerPort: "5555"
       service:
         port: "5555"
-      resources: {}
+      resources:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 100m
+          memory: 300m
     api:
       command: ["/bin/bash"]
       args: ["-c", "uvicorn server:app --timeout-keep-alive 180 --host=0.0.0.0 --port=8000 --forwarded-allow-ips='*' --proxy-headers"]
       containerPort: "8000"
       service:
         port: "8000"
-      resources: {}
+      resources:
+        limits:
+          cpu: "2"
+          memory: 4Gi
+        requests:
+          cpu: 500m
+          memory: 2Gi
       startupProbe:
         failureThreshold: 3
         httpGet:
@@ -572,18 +595,9 @@ aiAnalyst:
 aiprep:
   name: aiprep
   config:
-    printConsole: ""
-    db_connection_string: ""
-    openai_api_key: ""
+    printConsole: "True"
     storage:
       enabled: "true"
-      host: "datrics-minio"
-      port: "9000"
-      access_key: ""
-      secret_key: ""
-      use_ssl: "false"
-      bucket: ""
-    base_url: ""
   service:
     type: ClusterIP
     port: 8000

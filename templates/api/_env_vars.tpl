@@ -58,7 +58,7 @@
 - name: MAILCHIMP_LIST_ID
   value: {{ .Values.api.config.email.mailchimp.listId | quote }}
 - name: DEPLOYMENT_SCHEDULER_API_BASE_URL
-  value: {{ .Values.common.deployer_base_url | quote }}
+  value: {{ include "datrics.deployerEndpoint" . | quote }}
 - name: FE_ROUTE_SIGN_IN
   value: /signin
 - name: FE_ROUTE_RESET_PASSWORD
