@@ -70,7 +70,7 @@
 - name: SENTRY_DSN
   value: {{ .Values.api.config.sentry_dsn | quote }}
 - name: DEFAULT_PIPELINE_VERSION
-  value: {{ .Values.api.config.default_pipeline_version | quote }}
+  value: {{ .Values.api.config.default_pipeline_version | default .Values.images.pipelineImage.tag | quote }}
 - name: WORKERS_MODE
   value: {{ .Values.common.workers_mode | quote }}
 - name: EFS_DIRECTORY # always const
